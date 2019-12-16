@@ -21,13 +21,17 @@ export class DeepMapEntry<T> {
     exists(): boolean {
         this.assertNotDisposed()
         const l = this.args.length
-        return this.closestIdx >= l - 1 && this.closest.has(this.args[l - 1])
+        return (
+            this.closestIdx >= l - 1 &&
+            this.closest.has(this.args[l - 1]) &&
+            this.closest.get(this.args[l - 1]).has("$finalValue")
+        )
     }
 
     get(): T {
         this.assertNotDisposed()
         if (!this.exists()) throw new Error("Entry doesn't exist")
-        return this.closest.get(this.args[this.args.length - 1])
+        return this.closest.get(this.args[this.args.length - 1]).get("$finalValue")
     }
 
     set(value: T) {
@@ -42,14 +46,18 @@ export class DeepMapEntry<T> {
         }
         this.closestIdx = l - 1
         this.closest = current
-        current.set(this.args[l - 1], value)
+        let valueWrapper = new Map()
+        valueWrapper.set("$finalValue", value)
+        current.set(this.args[l - 1], valueWrapper)
     }
 
     delete() {
         this.assertNotDisposed()
         if (!this.exists()) throw new Error("Entry doesn't exist")
         const l = this.args.length
-        this.closest.delete(this.args[l - 1])
+        const valueWrapper = this.closest.get(this.args[l - 1])
+        valueWrapper.delete("$finalValue")
+        if (valueWrapper.size == 0) this.closest.delete(this.args[l - 1])
         // clean up remaining maps if needed (reconstruct stack first)
         let c = this.root
         const maps: Map<any, any>[] = [c]
@@ -74,15 +82,9 @@ export class DeepMapEntry<T> {
  */
 export class DeepMap<T> {
     private store = new Map<any, any>()
-    private argsLength = -1
     private last: DeepMapEntry<T>
 
     entry(args: any[]): DeepMapEntry<T> {
-        if (this.argsLength === -1) this.argsLength = args.length
-        else if (this.argsLength !== args.length)
-            throw new Error(
-                `DeepMap should be used with functions with a consistent length, expected: ${this.argsLength}, got: ${args.length}`
-            )
         if (this.last) this.last.isDisposed = true
 
         return (this.last = new DeepMapEntry(this.store, args))
