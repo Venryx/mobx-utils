@@ -21,17 +21,13 @@ export class DeepMapEntry<T> {
     exists(): boolean {
         this.assertNotDisposed()
         const l = this.args.length
-        return (
-            this.closestIdx >= l - 1 &&
-            this.closest.has(this.args[l - 1]) &&
-            this.closest.get(this.args[l - 1]).has("$finalValue")
-        )
+        return this.closestIdx >= l - 1 && this.closest.has(this.args[l - 1])
     }
 
     get(): T {
         this.assertNotDisposed()
         if (!this.exists()) throw new Error("Entry doesn't exist")
-        return this.closest.get(this.args[this.args.length - 1]).get("$finalValue")
+        return this.closest.get(this.args[this.args.length - 1])
     }
 
     set(value: T) {
@@ -46,18 +42,14 @@ export class DeepMapEntry<T> {
         }
         this.closestIdx = l - 1
         this.closest = current
-        let valueWrapper = new Map()
-        valueWrapper.set("$finalValue", value)
-        current.set(this.args[l - 1], valueWrapper)
+        current.set(this.args[l - 1], value)
     }
 
     delete() {
         this.assertNotDisposed()
         if (!this.exists()) throw new Error("Entry doesn't exist")
         const l = this.args.length
-        const valueWrapper = this.closest.get(this.args[l - 1])
-        valueWrapper.delete("$finalValue")
-        if (valueWrapper.size == 0) this.closest.delete(this.args[l - 1])
+        this.closest.delete(this.args[l - 1])
         // clean up remaining maps if needed (reconstruct stack first)
         let c = this.root
         const maps: Map<any, any>[] = [c]
@@ -77,6 +69,8 @@ export class DeepMapEntry<T> {
     }
 }
 
+export const $finalValue = Symbol("$finalValue")
+
 /**
  * @private
  */
@@ -87,6 +81,6 @@ export class DeepMap<T> {
     entry(args: any[]): DeepMapEntry<T> {
         if (this.last) this.last.isDisposed = true
 
-        return (this.last = new DeepMapEntry(this.store, args))
+        return (this.last = new DeepMapEntry(this.store, args.concat($finalValue)))
     }
 }
