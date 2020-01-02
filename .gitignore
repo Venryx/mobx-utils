@@ -1,9 +1,6 @@
 node_modules
 *.log
-lib
 coverage
-mobx-utils.module.js
-mobx-utils.umd.js
 .idea
 /.test-ts/
 *.iml
