@@ -69,22 +69,18 @@ export class DeepMapEntry<T> {
     }
 }
 
+export const $finalValue = Symbol("$finalValue")
+
 /**
  * @private
  */
 export class DeepMap<T> {
     private store = new Map<any, any>()
-    private argsLength = -1
     private last: DeepMapEntry<T>
 
     entry(args: any[]): DeepMapEntry<T> {
-        if (this.argsLength === -1) this.argsLength = args.length
-        else if (this.argsLength !== args.length)
-            throw new Error(
-                `DeepMap should be used with functions with a consistent length, expected: ${this.argsLength}, got: ${args.length}`
-            )
         if (this.last) this.last.isDisposed = true
 
-        return (this.last = new DeepMapEntry(this.store, args))
+        return (this.last = new DeepMapEntry(this.store, args.concat($finalValue)))
     }
 }
